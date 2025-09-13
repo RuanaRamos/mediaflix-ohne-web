@@ -1,13 +1,19 @@
 package br.com.ruana.mediaflix.principal;
 
+import br.com.ruana.mediaflix.model.DadosEpisodios;
 import br.com.ruana.mediaflix.model.DadosSerie;
 import br.com.ruana.mediaflix.model.DadosTemporada;
+import br.com.ruana.mediaflix.model.Episodio;
 import br.com.ruana.mediaflix.service.ConsumoAPI;
 import br.com.ruana.mediaflix.service.ConverteDados;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 public class Principal {
 
@@ -21,7 +27,7 @@ public class Principal {
 
     public void exibirMenu(){
 
-        System.out.println("Digite o nome da Serie para a busca");
+        System.out.println("Geben Sie den Namen der Serie für die Suche ein");
         var nomeSerie = leitura.nextLine();
         var json = consumo.obterDados( ENDERECO + nomeSerie.replace(" ", "+") + API_KEY );
         DadosSerie dados = conversor.obterDados(json, DadosSerie.class);
@@ -35,10 +41,42 @@ public class Principal {
             temporadas.add(dadosTemporada);
 
         }
-        temporadas.forEach(System.out::println);
-//
+
         temporadas.forEach(t -> t.episodios().forEach(e -> System.out.println(e.titulo())));
 
+        List<DadosEpisodios> dadosEpsodios = temporadas.stream()
+                .flatMap(t -> t.episodios().stream())
+                .collect(Collectors.toList());
+
+        dadosEpsodios.stream()
+                .filter(e -> !e.avaliacao().equalsIgnoreCase("N/A"))
+                .sorted(Comparator.comparing(DadosEpisodios::avaliacao).reversed())
+                .limit(5)
+                .forEach(System.out::println);
+
+        List<Episodio> episodios = temporadas.stream()
+                .flatMap(t -> t.episodios().stream()
+                .map(d -> new Episodio(t.numero(), d)))
+                .collect(Collectors.toList());
+
+        episodios.forEach(System.out::println);
+
+        System.out.println("Ab welchem Jahr möchten Sie schauen?");
+
+       var ano = leitura.nextInt();
+       leitura.nextLine();
+
+        LocalDate dataBusca = LocalDate.of(ano, 1, 1);
+
+        DateTimeFormatter formatador = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        episodios.stream()
+                .filter(e -> e.getDataDeLanacamento() != null && e.getDataDeLanacamento().isAfter(dataBusca))
+                .forEach(e -> System.out.println(
+                        "Temporada: " + e.getTemporadas() +
+                                "Episodio: " + e.getTitulo() +
+                                " Data de lancamento: " + e.getDataDeLanacamento().format(formatador)
+                 ));
 
     }
 }
