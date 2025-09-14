@@ -77,4 +77,6 @@ public class Episodio {
                 ", avaliacao=" + avaliacao +
                 ", dataDeLanacamento=" + dataDeLanacamento;
     }
+
+
 }
